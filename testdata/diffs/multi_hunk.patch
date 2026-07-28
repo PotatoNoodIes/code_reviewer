@@ -1,0 +1,14 @@
+@@ -1,4 +1,5 @@
+ package main
+
+ import "fmt"
++import "os"
+
+@@ -5,5 +6,6 @@ func main() {
+ func main() {
+ 	x := 1
+ 	y := 2
+-	fmt.Println(x + y)
++	z := x + y
++	fmt.Println(z)
+ }

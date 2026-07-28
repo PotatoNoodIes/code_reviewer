@@ -1,0 +1,54 @@
+name: "AI Code Reviewer"
+description: "Senior-dev-style AI code review of pull requests, powered by a self-hosted Ollama model."
+branding:
+  icon: "eye"
+  color: "blue"
+
+inputs:
+  github-token:
+    description: "GitHub token used to read PR data and post review comments."
+    required: true
+  ollama-url:
+    description: "Base URL of the self-hosted Ollama server (must be reachable from the runner, e.g. a self-hosted runner on the same network)."
+    required: false
+    default: "http://localhost:11434"
+  ollama-model:
+    description: "Ollama model to use for review."
+    required: false
+    default: "qwen2.5-coder:7b"
+  ollama-format-mode:
+    description: "How to constrain Ollama's JSON output: schema, json, or none."
+    required: false
+    default: "schema"
+  ollama-concurrency:
+    description: "Reserved for future use; files are currently reviewed sequentially."
+    required: false
+    default: "1"
+  ollama-timeout-seconds:
+    description: "Per-file Ollama request timeout, in seconds."
+    required: false
+    default: "120"
+  max-files:
+    description: "Maximum number of changed files to review per PR (largest diffs first; the rest are reported as skipped)."
+    required: false
+    default: "15"
+  max-file-lines:
+    description: "Reserved for future use; oversized files are not yet capped by line count."
+    required: false
+    default: "1200"
+  ignore-patterns:
+    description: "Comma-separated glob patterns of paths to skip. Defaults to vendor/node_modules/lockfiles/build output."
+    required: false
+    default: ""
+  review-event:
+    description: "GitHub review event to submit: COMMENT, APPROVE, or REQUEST_CHANGES."
+    required: false
+    default: "COMMENT"
+  dry-run:
+    description: "If true, print findings to the job log instead of posting them to the PR."
+    required: false
+    default: "false"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"

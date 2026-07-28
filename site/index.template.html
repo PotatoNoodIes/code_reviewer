@@ -1,0 +1,1007 @@
+<title>AI Code Reviewer — a senior review, without the cloud</title>
+<style>
+  @font-face {
+    font-family: 'JBMono';
+    src: url(data:font/woff2;base64,__FONT_MONO_400__) format('woff2');
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'JBMono';
+    src: url(data:font/woff2;base64,__FONT_MONO_700__) format('woff2');
+    font-weight: 700; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'SourceSerif';
+    src: url(data:font/woff2;base64,__FONT_SERIF_400__) format('woff2');
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'SourceSerif';
+    src: url(data:font/woff2;base64,__FONT_SERIF_400I__) format('woff2');
+    font-weight: 400; font-style: italic; font-display: swap;
+  }
+  @font-face {
+    font-family: 'SourceSerif';
+    src: url(data:font/woff2;base64,__FONT_SERIF_600__) format('woff2');
+    font-weight: 600; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    --paper: #EEF1F3;
+    --panel: #E3E8EB;
+    --panel-2: #D9DFE3;
+    --ink: #151A1E;
+    --ink-dim: #545E64;
+    --ink-faint: #838F95;
+    --line: #C7CFD3;
+    --accent: #9C5B14;
+    --accent-strong: #7A4610;
+    --accent-bg: rgba(156, 91, 20, 0.10);
+    --add: #3D7A55;
+    --add-bg: rgba(61, 122, 85, 0.12);
+    --remove: #A24B4B;
+    --remove-bg: rgba(162, 75, 75, 0.12);
+    --shadow: rgba(21, 26, 30, 0.10);
+    --code-bg: #E7EBED;
+
+    --font-mono: 'JBMono', ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+    --font-serif: 'SourceSerif', Charter, Georgia, serif;
+
+    --wrap: 1120px;
+    --prose: 42rem;
+    --dur: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0D1013;
+      --panel: #15191D;
+      --panel-2: #1C2126;
+      --ink: #E7EAEC;
+      --ink-dim: #9BA5AA;
+      --ink-faint: #6B757A;
+      --line: #272E33;
+      --accent: #E9A23D;
+      --accent-strong: #F4BC6C;
+      --accent-bg: rgba(233, 162, 61, 0.12);
+      --add: #6FBE8E;
+      --add-bg: rgba(111, 190, 142, 0.13);
+      --remove: #E08787;
+      --remove-bg: rgba(224, 135, 135, 0.13);
+      --shadow: rgba(0, 0, 0, 0.5);
+      --code-bg: #12161A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0D1013; --panel: #15191D; --panel-2: #1C2126;
+    --ink: #E7EAEC; --ink-dim: #9BA5AA; --ink-faint: #6B757A; --line: #272E33;
+    --accent: #E9A23D; --accent-strong: #F4BC6C; --accent-bg: rgba(233, 162, 61, 0.12);
+    --add: #6FBE8E; --add-bg: rgba(111, 190, 142, 0.13);
+    --remove: #E08787; --remove-bg: rgba(224, 135, 135, 0.13);
+    --shadow: rgba(0, 0, 0, 0.5); --code-bg: #12161A;
+  }
+  :root[data-theme="light"] {
+    --paper: #EEF1F3; --panel: #E3E8EB; --panel-2: #D9DFE3;
+    --ink: #151A1E; --ink-dim: #545E64; --ink-faint: #838F95; --line: #C7CFD3;
+    --accent: #9C5B14; --accent-strong: #7A4610; --accent-bg: rgba(156, 91, 20, 0.10);
+    --add: #3D7A55; --add-bg: rgba(61, 122, 85, 0.12);
+    --remove: #A24B4B; --remove-bg: rgba(162, 75, 75, 0.12);
+    --shadow: rgba(21, 26, 30, 0.10); --code-bg: #E7EBED;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  h1, h2, h3, h4 { font-family: var(--font-mono); color: var(--ink); margin: 0; text-wrap: balance; font-weight: 700; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  code, pre { font-family: var(--font-mono); }
+  ::selection { background: var(--accent-bg); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 1.75rem; }
+  .prose { max-width: var(--prose); }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-row {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 3.25rem;
+  }
+  .brand {
+    font-family: var(--font-mono); font-weight: 700; font-size: 0.9375rem;
+    display: flex; align-items: center; gap: 0.5em;
+  }
+  .brand .dot { color: var(--accent); }
+  .nav-links { display: flex; gap: 1.75rem; list-style: none; margin: 0; padding: 0; }
+  .nav-links a {
+    font-family: var(--font-mono); font-size: 0.8125rem; color: var(--ink-dim);
+    position: relative; padding-bottom: 0.3rem;
+  }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; right: 100%; bottom: 0; height: 1px;
+    background: var(--accent); transition: right 0.25s ease;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after { right: 0; }
+  @media (max-width: 720px) { .nav-links { display: none; } }
+
+  /* ---------- Eyebrow / section headers ---------- */
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.8125rem; color: var(--accent);
+    letter-spacing: 0.02em; display: flex; align-items: center; gap: 0.55em;
+    margin: 0 0 0.9rem;
+  }
+  .eyebrow .glyph { color: var(--accent-strong); }
+  section.block { padding: 5.5rem 0; border-top: 1px solid var(--line); }
+  section.block:first-of-type { border-top: none; }
+  h2.title { font-size: clamp(1.5rem, 2.4vw, 1.9rem); margin-bottom: 0.85rem; }
+  .lede { color: var(--ink-dim); font-size: 1.0625rem; max-width: var(--prose); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 4.5rem 0 4rem; }
+  .hero-head { max-width: 46rem; margin-bottom: 3rem; }
+  .hero-head .eyebrow { margin-bottom: 1.1rem; }
+  h1.headline {
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.08;
+    margin-bottom: 1.2rem;
+  }
+  h1.headline .hl { color: var(--accent); }
+  .hero-sub {
+    font-family: var(--font-serif); font-size: 1.15rem; color: var(--ink-dim);
+    max-width: 38rem; line-height: 1.6;
+  }
+  .hero-sub strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Demo code panel ---------- */
+  .demo-frame {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--code-bg);
+    overflow: hidden;
+    box-shadow: 0 18px 50px -20px var(--shadow);
+  }
+  .demo-tab {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faint);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .demo-tab .status { color: var(--add); }
+  .code-grid { margin: 0; padding: 0.35rem 0; overflow-x: auto; }
+  .code-line {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr;
+    align-items: start;
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+    line-height: 1.72;
+    position: relative;
+  }
+  .code-line.has-note { background: var(--accent-bg); }
+  .ln {
+    text-align: right; padding-right: 0.9rem; color: var(--ink-faint);
+    user-select: none; font-variant-numeric: tabular-nums;
+  }
+  .src { white-space: pre; color: var(--ink-dim); padding-right: 1rem; }
+  .code-line.has-note .src { color: var(--ink); }
+  .note-row { grid-column: 1 / -1; padding: 0 1rem 0.6rem 2.75rem; }
+  .note {
+    display: inline-flex; flex-direction: column; gap: 0.15rem;
+    border: 1px solid var(--accent); border-left: 3px solid var(--accent);
+    background: var(--panel); border-radius: 3px;
+    padding: 0.45rem 0.7rem; margin-top: 0.15rem;
+    max-width: 34rem;
+    opacity: 0; transform: translateY(-3px);
+    animation: noteIn 0.5s ease forwards;
+  }
+  .note .tag {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--accent-strong);
+  }
+  .note .msg { font-family: var(--font-serif); font-size: 0.86rem; color: var(--ink); line-height: 1.45; }
+  @keyframes noteIn { to { opacity: 1; transform: translateY(0); } }
+
+  .demo-summary {
+    display: flex; gap: 1.5rem; align-items: baseline; flex-wrap: wrap;
+    margin-top: 1.1rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint);
+    opacity: 0; animation: noteIn 0.6s ease forwards;
+  }
+  .demo-summary b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 640px) {
+    .code-line { grid-template-columns: 2rem 1fr; font-size: 0.76rem; }
+    .note-row { padding-left: 2rem; }
+  }
+
+  /* ---------- Reveal on scroll ---------- */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* ---------- Category grid ---------- */
+  .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 2.5rem; }
+  .cat { background: var(--paper); padding: 1.5rem 1.4rem; transition: background 0.2s ease; }
+  .cat:hover { background: var(--panel); }
+  .cat .kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--accent); text-transform: uppercase; }
+  .cat h3 { font-family: var(--font-mono); font-size: 1.05rem; margin: 0.5rem 0 0.6rem; }
+  .cat p { color: var(--ink-dim); font-size: 0.92rem; line-height: 1.5; }
+  @media (max-width: 880px) { .cats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .cats { grid-template-columns: 1fr; } }
+
+  /* ---------- Pipeline (how it works) ---------- */
+  .pipeline { margin-top: 2.75rem; border-top: 1px solid var(--line); }
+  .step {
+    display: grid; grid-template-columns: 3.5rem 1fr;
+    padding: 1.6rem 0; border-bottom: 1px solid var(--line);
+    gap: 1.25rem;
+  }
+  .step .num {
+    font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-faint);
+    padding-top: 0.15rem; font-variant-numeric: tabular-nums;
+  }
+  .step h3 { font-size: 1.02rem; margin-bottom: 0.4rem; }
+  .step p { color: var(--ink-dim); font-size: 0.98rem; max-width: 40rem; }
+  @media (max-width: 560px) { .step { grid-template-columns: 2.25rem 1fr; } }
+
+  /* ---------- Code blocks (yaml / terminal) ---------- */
+  .codeblock {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px;
+    overflow-x: auto; margin: 1.75rem 0;
+  }
+  .codeblock .bar {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint);
+    padding: 0.55rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel);
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .codeblock pre {
+    margin: 0; padding: 1.1rem 1.25rem; font-size: 0.83rem; line-height: 1.65;
+    color: var(--ink-dim); white-space: pre;
+  }
+  .y-key { color: var(--ink); }
+  .y-val { color: var(--accent-strong); }
+  .y-com { color: var(--ink-faint); font-style: italic; }
+
+  .term pre { color: var(--ink-dim); }
+  .term .prompt { color: var(--accent); }
+  .term .out { color: var(--ink-faint); }
+  .cursor { display: inline-block; width: 0.55em; height: 1em; background: var(--accent); vertical-align: -0.15em; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- Table ---------- */
+  .tbl-wrap { overflow-x: auto; margin-top: 1.5rem; }
+  table.inputs { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 640px; }
+  table.inputs th { text-align: left; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); padding: 0 0.9rem 0.7rem; border-bottom: 1px solid var(--line); }
+  table.inputs td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-dim); }
+  table.inputs td:first-child { font-family: var(--font-mono); color: var(--ink); white-space: nowrap; }
+  table.inputs td:nth-child(2) { font-family: var(--font-mono); color: var(--accent-strong); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.inputs tr:last-child td { border-bottom: none; }
+
+  /* ---------- Callout (reviewer-note styled) ---------- */
+  .callout {
+    border: 1px solid var(--accent); border-left: 3px solid var(--accent);
+    background: var(--accent-bg); border-radius: 4px;
+    padding: 1.4rem 1.5rem; margin-top: 2rem; max-width: var(--prose);
+  }
+  .callout .tag { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-strong); display: block; margin-bottom: 0.6rem; }
+  .callout p { color: var(--ink); font-size: 0.98rem; margin-bottom: 0.7rem; }
+  .callout ul { margin: 0.4rem 0 0; padding-left: 1.2rem; color: var(--ink); font-size: 0.95rem; }
+  .callout li { margin-bottom: 0.5rem; line-height: 1.5; }
+  .callout li:last-child { margin-bottom: 0; }
+
+  /* ---------- PR mockup ---------- */
+  .pr-mock {
+    margin-top: 2.5rem; max-width: 44rem;
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+    box-shadow: 0 18px 50px -24px var(--shadow);
+  }
+  .pr-head { padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .pr-title { font-family: var(--font-mono); font-size: 1rem; color: var(--ink); font-weight: 700; text-wrap: balance; }
+  .pr-meta { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint); margin-top: 0.4rem; }
+  .pr-file-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1.25rem; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-dim);
+    background: var(--panel-2); border-bottom: 1px solid var(--line);
+  }
+  .pr-diff { background: var(--code-bg); overflow-x: auto; }
+  .pr-line { display: grid; grid-template-columns: 2.75rem 1fr; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7; }
+  .pr-line .ln { text-align: right; padding-right: 0.9rem; color: var(--ink-faint); user-select: none; }
+  .pr-line .src { white-space: pre; color: var(--ink-dim); padding-right: 1rem; }
+  .pr-line.flag { background: var(--accent-bg); }
+  .pr-line.flag .src { color: var(--ink); }
+  .pr-collapsed {
+    padding: 0.4rem 1.25rem 0.4rem 2.75rem; font-family: var(--font-mono); font-size: 0.74rem;
+    color: var(--ink-faint); background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .pr-comment { display: flex; gap: 0.75rem; padding: 0.9rem 1.25rem 1.15rem 2.75rem; border-bottom: 1px solid var(--line); background: var(--paper); }
+  .pr-avatar {
+    flex: none; width: 1.7rem; height: 1.7rem; border-radius: 3px; background: var(--accent);
+    color: var(--paper); font-family: var(--font-mono); font-size: 0.64rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pr-comment-body { min-width: 0; }
+  .pr-comment-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.76rem; margin-bottom: 0.35rem; }
+  .pr-author { color: var(--ink); font-weight: 700; }
+  .pr-when { color: var(--ink-faint); }
+  .pr-sev { font-size: 0.66rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 3px; border: 1px solid currentColor; }
+  .pr-sev.high { color: var(--remove); }
+  .pr-sev.med { color: var(--ink-faint); }
+  .pr-msg { font-family: var(--font-serif); font-size: 0.9rem; color: var(--ink-dim); line-height: 1.5; margin: 0; }
+
+  .pr-summary { padding: 1.1rem 1.25rem 1.3rem; background: var(--panel); }
+  .pr-summary-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.8rem; }
+  .pr-summary-row .pr-author { font-family: var(--font-mono); font-size: 0.85rem; }
+  .pr-status-pill {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 0.2rem 0.55rem; border-radius: 3px; border: 1px solid var(--ink-faint); color: var(--ink-dim);
+  }
+  .pr-status-pill.good { color: var(--add); border-color: var(--add); }
+  .pr-status-pill.bad { color: var(--remove); border-color: var(--remove); }
+  .pr-summary-text { font-family: var(--font-serif); font-size: 0.94rem; color: var(--ink-dim); margin-bottom: 1.15rem; max-width: 32rem; }
+  .pr-merge { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .pr-merge-btn {
+    font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;
+    padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid transparent; cursor: not-allowed;
+    background: var(--add); color: var(--paper);
+  }
+  .pr-merge-btn.blocked { background: var(--panel-2); color: var(--ink-faint); border-color: var(--line); }
+  .pr-merge-note { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint); max-width: 22rem; }
+  .pr-toggle { display: flex; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+  .pr-toggle button {
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
+    padding: 0.4rem 0.7rem; border-radius: 3px; border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink-dim); cursor: pointer;
+  }
+  .pr-toggle button:hover { border-color: var(--accent); color: var(--ink); }
+  .pr-toggle button.active { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-bg); }
+
+  .limits { margin-top: 1.5rem; max-width: var(--prose); }
+  .limits li { color: var(--ink-dim); font-size: 0.97rem; line-height: 1.55; margin-bottom: 0.7rem; padding-left: 1.1rem; position: relative; }
+  .limits li::before { content: "–"; position: absolute; left: 0; color: var(--ink-faint); }
+
+  footer {
+    border-top: 1px solid var(--line); padding: 2.75rem 0 3.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  footer .brand { font-size: 0.85rem; }
+  footer .tagline { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  /* ---------- Emulation sandbox (retro CRT) ---------- */
+  .crt-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 0.9rem; margin-top: 2.5rem; }
+  .crt-bezel {
+    width: 100%; max-width: 40rem;
+    background: linear-gradient(160deg, #333029, #171512 65%);
+    border-radius: 20px;
+    padding: 1.5rem 1.5rem 1.15rem;
+    box-shadow: 0 26px 60px -24px var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  .crt-screen {
+    position: relative; border-radius: 7px; overflow: hidden;
+    background: #051309;
+    padding: 1.6rem 1.5rem;
+    min-height: 19rem; max-height: 24rem; overflow-y: auto;
+    cursor: text;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.9), inset 0 0 60px rgba(0,0,0,0.75), inset 0 0 120px rgba(0,0,0,0.55);
+  }
+  .crt-input {
+    position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; margin: 0;
+    border: 0; pointer-events: none;
+  }
+  .crt-screen::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.4) 0px, rgba(0,0,0,0.4) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode: multiply;
+  }
+  .crt-screen::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: radial-gradient(ellipse at 50% 45%, transparent 50%, rgba(0,0,0,0.6) 100%);
+  }
+  .crt-text {
+    position: relative; z-index: 1; margin: 0;
+    font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.68; letter-spacing: 0.015em;
+    color: #56ff8c;
+    text-shadow: 0 0 1px rgba(86,255,140,0.9), 0 0 7px rgba(86,255,140,0.5), 0 0 22px rgba(86,255,140,0.22);
+    white-space: pre-wrap; word-break: break-word; min-height: 16rem;
+    animation: crtFlicker 6s infinite steps(60);
+  }
+  .crt-text .inv { background: #56ff8c; color: #051309; text-shadow: none; padding: 0 0.2em; }
+  .crt-cursor {
+    display: inline-block; width: 0.56em; height: 1em; background: #56ff8c;
+    box-shadow: 0 0 8px rgba(86,255,140,0.75); vertical-align: -0.15em;
+    animation: crtBlink 0.9s steps(1) infinite;
+  }
+  .crt-plate {
+    width: 100%; max-width: 40rem; display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.72rem;
+    color: var(--ink-faint); letter-spacing: 0.03em;
+  }
+  .crt-plate .plate-text code {
+    font-family: var(--font-mono); color: var(--ink-dim); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 3px; padding: 0.05rem 0.35rem;
+  }
+  .crt-rerun {
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.4rem 0.8rem; cursor: pointer; box-shadow: 0 1px 0 var(--line);
+  }
+  .crt-rerun:hover { color: var(--ink); border-color: var(--accent); }
+  .crt-rerun:active { transform: translateY(1px); box-shadow: none; }
+
+  @keyframes crtFlicker {
+    0%, 100% { opacity: 1; } 8% { opacity: 0.94; } 9% { opacity: 1; }
+    52% { opacity: 0.97; } 53% { opacity: 1; }
+  }
+  @keyframes crtBlink { 50% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { transition: none; opacity: 1; transform: none; }
+    .note, .demo-summary { animation: none; opacity: 1; transform: none; }
+    .cursor { animation: none; }
+    .nav-links a::after { transition: none; }
+    .crt-text { animation: none; }
+    .crt-cursor { animation: none; }
+  }
+</style>
+
+<div class="nav">
+  <div class="wrap nav-row">
+    <div class="brand"><span class="dot">›</span>ai-code-reviewer</div>
+    <ul class="nav-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#categories">Categories</a></li>
+      <li><a href="#setup">Setup</a></li>
+      <li><a href="#pr">On the PR</a></li>
+      <li><a href="#limits">Limits</a></li>
+      <li><a href="#local">Run locally</a></li>
+      <li><a href="#sandbox">Sandbox</a></li>
+    </ul>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-head">
+      <div class="eyebrow"><span class="glyph">›</span> go · github actions · ollama</div>
+      <h1 class="headline">Reads your diff like a senior engineer. <span class="hl">Never leaves your network.</span></h1>
+      <p class="hero-sub">AI Code Reviewer is a GitHub Action that reviews every pull request with a <strong>self-hosted Ollama model</strong> — full file context, inline comments on the exact line, and no cloud API bill.</p>
+    </div>
+
+    <div class="demo-frame">
+      <div class="demo-tab"><span>sample.go — pull_request #42</span><span class="status">● review posted</span></div>
+      <pre class="code-grid" id="codeGrid"><!-- rows injected below --></pre>
+    </div>
+    <div class="demo-summary" id="demoSummary" style="animation-delay: 2.3s;">
+      <span><b>4</b> findings</span><span><b>1</b> file reviewed</span><span>model: <b>qwen2.5-coder:7b</b></span>
+    </div>
+  </section>
+
+  <section class="block reveal" id="categories">
+    <div class="eyebrow"><span class="glyph">›</span> what it checks</div>
+    <h2 class="title">Four categories, every file, every push.</h2>
+    <p class="lede">The same system prompt runs on every changed file: no generic linting rules, no invented nits — if a file is clean, it says so.</p>
+    <div class="cats">
+      <div class="cat">
+        <div class="kicker">bug</div>
+        <h3>Logic &amp; correctness</h3>
+        <p>Off-by-ones, wrong conditionals, mishandled errors — things that will misbehave, crash, or return the wrong answer.</p>
+      </div>
+      <div class="cat">
+        <div class="kicker">security</div>
+        <h3>Vulnerabilities</h3>
+        <p>Injection, hardcoded secrets, unsafe deserialization, missing auth or validation.</p>
+      </div>
+      <div class="cat">
+        <div class="kicker">simplification</div>
+        <h3>Reuse &amp; clarity</h3>
+        <p>Code that works but could be clearer, shorter, or shouldn't be duplicated.</p>
+      </div>
+      <div class="cat">
+        <div class="kicker">style</div>
+        <h3>Naming &amp; idiom</h3>
+        <p>Formatting and naming issues a careful teammate would flag in passing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="how">
+    <div class="eyebrow"><span class="glyph">›</span> how it works</div>
+    <h2 class="title">One pull request, six steps.</h2>
+    <p class="lede">No polling, no local checkout — every step reads from the GitHub API directly, driven by the event that triggered the run.</p>
+    <div class="pipeline">
+      <div class="step">
+        <div class="num">01</div>
+        <div><h3>Read the trigger</h3><p>A <code>pull_request</code> event (opened or synchronize) fires the action; it parses the payload for owner, repo, PR number, and head SHA.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <div><h3>Select files</h3><p>Changed files are listed, filtered against <code>ignore-patterns</code>, and capped at <code>max-files</code> — largest diffs reviewed first, the rest reported as skipped.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <div><h3>Parse the diff</h3><p>Each unified-diff patch is parsed to find exactly which line numbers a comment is allowed to land on.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <div><h3>Fetch full context</h3><p>The complete file comes from the Git Blob API at the head commit, so the model reads whole functions — not fragments.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">05</div>
+        <div><h3>Ask the model</h3><p>File, diff, and a fixed senior-review system prompt go to Ollama, constrained to a JSON schema. Malformed output is retried, then skipped — never allowed to break the run.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">06</div>
+        <div><h3>Validate &amp; post</h3><p>Every finding is re-checked against the file's real commentable lines before it's trusted. Comments post one GitHub review per file, hashed to skip duplicates on the next push.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="setup">
+    <div class="eyebrow"><span class="glyph">›</span> setup</div>
+    <h2 class="title">Point it at a self-hosted runner.</h2>
+    <p class="lede">Ollama needs to be reachable from the machine running the job — realistic for a self-hosted runner, not for GitHub-hosted ones.</p>
+
+    <div class="codeblock">
+      <div class="bar">.github/workflows/ai-review.yml</div>
+      <pre><span class="y-key">on</span>:
+  <span class="y-key">pull_request</span>:
+    <span class="y-key">types</span>: [<span class="y-val">opened</span>, <span class="y-val">synchronize</span>]
+
+<span class="y-key">permissions</span>:
+  <span class="y-key">pull-requests</span>: <span class="y-val">write</span>  <span class="y-com"># required — default GITHUB_TOKEN is read-only</span>
+
+<span class="y-key">jobs</span>:
+  <span class="y-key">review</span>:
+    <span class="y-key">runs-on</span>: <span class="y-val">self-hosted</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-val">&lt;owner&gt;/ai-code-reviewer@v1</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">github-token</span>: <span class="y-val">${{ secrets.GITHUB_TOKEN }}</span>
+          <span class="y-key">ollama-url</span>: <span class="y-val">http://localhost:11434</span>
+          <span class="y-key">ollama-model</span>: <span class="y-val">qwen2.5-coder:7b</span></pre>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="inputs">
+        <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>github-token</td><td>required</td><td>Reads PR data and posts comments.</td></tr>
+          <tr><td>ollama-url</td><td>localhost:11434</td><td>Base URL of the Ollama server — see note below.</td></tr>
+          <tr><td>ollama-model</td><td>qwen2.5-coder:7b</td><td>A code-focused model reviews far better than a general chat model.</td></tr>
+          <tr><td>ollama-format-mode</td><td>schema</td><td>JSON-schema-constrained decoding; falls back to plain <code>json</code> on older Ollama.</td></tr>
+          <tr><td>max-files</td><td>15</td><td>Cap per PR — largest diffs reviewed first.</td></tr>
+          <tr><td>ignore-patterns</td><td>vendor, lockfiles…</td><td>Comma-separated globs of paths to skip.</td></tr>
+          <tr><td>review-event</td><td>COMMENT</td><td>COMMENT, APPROVE, or REQUEST_CHANGES.</td></tr>
+          <tr><td>dry-run</td><td>false</td><td>Print findings to the log instead of posting.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <span class="tag">reviewing the reviewer</span>
+      <p>This ships as a <strong>Docker container action</strong>, which runs in its own network namespace — <code>localhost</code> inside the container is not the runner host, even on self-hosted infrastructure.</p>
+      <ul>
+        <li>Bind Ollama to all interfaces (<code>OLLAMA_HOST=0.0.0.0</code>) and point <code>ollama-url</code> at the runner's real LAN IP or Docker bridge gateway.</li>
+        <li>Or run the self-hosted runner itself with <code>--network host</code>, so job containers inherit host networking and <code>localhost</code> resolves as expected.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block reveal" id="pr">
+    <div class="eyebrow"><span class="glyph">›</span> on the pull request</div>
+    <h2 class="title">What actually shows up in the PR.</h2>
+    <p class="lede">The same sample.go, the same four findings — rendered as the review GitHub would show. Flip <code>review-event</code> below to see how each mode behaves.</p>
+
+    <div class="pr-mock">
+      <div class="pr-head">
+        <div class="pr-title">Fix user lookup, add password reset support</div>
+        <div class="pr-meta">#42 &middot; fix/user-lookup &rarr; main &middot; 1 file changed</div>
+      </div>
+      <div class="pr-file-bar"><span>sample.go</span><span>4 comments</span></div>
+
+      <div class="pr-diff">
+        <div class="pr-line"><span class="ln">7</span><code class="src"></code></div>
+        <div class="pr-line flag"><span class="ln">8</span><code class="src">const apiKey = "sk-live-abc123secretkey"</code></div>
+        <div class="pr-line"><span class="ln">9</span><code class="src"></code></div>
+
+        <div class="pr-comment">
+          <div class="pr-avatar">AI</div>
+          <div class="pr-comment-body">
+            <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">security &middot; high</span></div>
+            <p class="pr-msg">Hardcoded secret in source code — move to environment variables or a secrets manager.</p>
+          </div>
+        </div>
+
+        <div class="pr-collapsed">&#8942; 1 unchanged line</div>
+
+        <div class="pr-line"><span class="ln">10</span><code class="src">func getUser(db *sql.DB, name string) {</code></div>
+        <div class="pr-line flag"><span class="ln">11</span><code class="src">  query := "SELECT * FROM users WHERE name = '" + name + "'"</code></div>
+        <div class="pr-line"><span class="ln">12</span><code class="src">  rows, _ := db.Query(query)</code></div>
+
+        <div class="pr-comment">
+          <div class="pr-avatar">AI</div>
+          <div class="pr-comment-body">
+            <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">bug &middot; high</span></div>
+            <p class="pr-msg">SQL injection via string concatenation — use a parameterized query.</p>
+          </div>
+        </div>
+
+        <div class="pr-collapsed">&#8942; 4 unchanged lines</div>
+
+        <div class="pr-line"><span class="ln">17</span><code class="src">  total := 0</code></div>
+        <div class="pr-line flag"><span class="ln">18</span><code class="src">  for i := 0; i &lt;= len(nums); i++ {</code></div>
+        <div class="pr-line"><span class="ln">19</span><code class="src">    total += nums[i]</code></div>
+
+        <div class="pr-comment">
+          <div class="pr-avatar">AI</div>
+          <div class="pr-comment-body">
+            <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">bug &middot; high</span></div>
+            <p class="pr-msg">Off-by-one — i &lt;= len(nums) reads one index past the end of the slice.</p>
+          </div>
+        </div>
+
+        <div class="pr-collapsed">&#8942; 4 unchanged lines</div>
+
+        <div class="pr-line"><span class="ln">24</span><code class="src">func printAll(items []string) {</code></div>
+        <div class="pr-line flag"><span class="ln">25</span><code class="src">  for i := 0; i &lt; len(items); i++ {</code></div>
+        <div class="pr-line"><span class="ln">26</span><code class="src">    fmt.Println(items[i])</code></div>
+
+        <div class="pr-comment">
+          <div class="pr-avatar">AI</div>
+          <div class="pr-comment-body">
+            <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev med">simplification &middot; medium</span></div>
+            <p class="pr-msg">This loop duplicates the one below it — one pass is enough.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pr-summary">
+        <div class="pr-summary-row">
+          <div class="pr-avatar">AI</div>
+          <span class="pr-author">ai-code-reviewer</span>
+          <span class="pr-status-pill" id="prPill">COMMENTED</span>
+        </div>
+        <p class="pr-summary-text" id="prText">Left 4 comments across 1 file. A COMMENT review never blocks or requires action before merging.</p>
+        <div class="pr-merge">
+          <button class="pr-merge-btn" id="prMergeBtn" disabled>Merge pull request</button>
+          <span class="pr-merge-note" id="prNote">No review requirement triggered — merge whenever you're ready.</span>
+        </div>
+        <div class="pr-toggle" role="group" aria-label="review-event value">
+          <button type="button" data-mode="COMMENT" class="active">review-event: COMMENT</button>
+          <button type="button" data-mode="APPROVE">APPROVE</button>
+          <button type="button" data-mode="REQUEST_CHANGES">REQUEST_CHANGES</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="limits">
+    <div class="eyebrow"><span class="glyph">›</span> known limits</div>
+    <h2 class="title">What v1 doesn't do yet.</h2>
+    <ul class="limits">
+      <li>No stale-comment resolution — the REST API has no thread-resolve endpoint (needs GraphQL's <code>resolveReviewThread</code>), so comments for since-fixed issues stay open.</li>
+      <li><code>max-file-lines</code> and <code>ollama-concurrency</code> are accepted but not yet enforced — files review sequentially, uncapped by line count.</li>
+      <li>Renames with no content change, and diffs GitHub declines to compute, are skipped — there's no diff to validate a finding against.</li>
+      <li>Schema-constrained decoding needs a reasonably recent Ollama; older servers should use <code>ollama-format-mode: json</code>.</li>
+    </ul>
+  </section>
+
+  <section class="block reveal" id="local">
+    <div class="eyebrow"><span class="glyph">›</span> run it yourself</div>
+    <h2 class="title">No PR required to try it.</h2>
+    <p class="lede">Unit tests need no network. The dry run hits a real PR but never posts a comment.</p>
+
+    <div class="codeblock term">
+      <div class="bar">terminal</div>
+      <pre><span class="prompt">$</span> make build test vet
+<span class="out">ok   internal/githubapi   0.006s
+ok   internal/ollama       0.002s
+ok   internal/review       0.006s</span>
+
+<span class="prompt">$</span> GITHUB_TOKEN=&lt;token&gt; DRY_RUN=true \
+    go run ./cmd/reviewer --owner &lt;owner&gt; --repo &lt;repo&gt; --pr &lt;number&gt;<span class="cursor"></span></pre>
+    </div>
+  </section>
+
+  <section class="block reveal" id="sandbox">
+    <div class="eyebrow"><span class="glyph">›</span> emulation sandbox</div>
+    <h2 class="title">Go ahead, type something.</h2>
+    <p class="lede">A live 1977-style terminal. Click in and type <code>HELP</code> to see what it knows.</p>
+    <p class="sr-only">An interactive retro computer terminal. Focus the terminal and type commands such as HELP, LIST, or REVIEW SAMPLE.GO to run a scripted review and see its output.</p>
+
+    <div class="crt-wrap">
+      <div class="crt-bezel">
+        <div class="crt-screen" id="crtScreen">
+          <pre class="crt-text" id="crtText" aria-hidden="true"></pre>
+          <input class="crt-input" id="crtInput" type="text" aria-label="Terminal command input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="crt-plate">
+        <span class="plate-text">MODEL 3070 &middot; INTERACTIVE EMULATION &middot; TRY <code>HELP</code></span>
+        <button class="crt-rerun" id="crtRerun" type="button">Reset ▸</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <div class="brand"><span class="dot">›</span>ai-code-reviewer</div>
+  <div class="tagline">Go · GitHub Actions · Ollama — self-hosted, private, no per-token bill.</div>
+</footer>
+
+<script>
+(function () {
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var lines = [
+    { n: 1, code: 'package main' },
+    { n: 2, code: '' },
+    { n: 3, code: 'import (' },
+    { n: 4, code: '  "database/sql"' },
+    { n: 5, code: '  "fmt"' },
+    { n: 6, code: ')' },
+    { n: 7, code: '' },
+    { n: 8, code: 'const apiKey = "sk-live-abc123secretkey"', note: { tag: 'security · high', msg: 'Hardcoded secret in source code — move to environment variables or a secrets manager.' } },
+    { n: 9, code: '' },
+    { n: 10, code: 'func getUser(db *sql.DB, name string) {' },
+    { n: 11, code: '  query := "SELECT * FROM users WHERE name = \'" + name + "\'"', note: { tag: 'bug · high', msg: 'SQL injection via string concatenation — use a parameterized query.' } },
+    { n: 12, code: '  rows, _ := db.Query(query)' },
+    { n: 13, code: '  defer rows.Close()' },
+    { n: 14, code: '}' },
+    { n: 15, code: '' },
+    { n: 16, code: 'func sum(nums []int) int {' },
+    { n: 17, code: '  total := 0' },
+    { n: 18, code: '  for i := 0; i <= len(nums); i++ {', note: { tag: 'bug · high', msg: 'Off-by-one — i <= len(nums) reads one index past the end of the slice.' } },
+    { n: 19, code: '    total += nums[i]' },
+    { n: 20, code: '  }' },
+    { n: 21, code: '  return total' },
+    { n: 22, code: '}' },
+    { n: 23, code: '' },
+    { n: 24, code: 'func printAll(items []string) {' },
+    { n: 25, code: '  for i := 0; i < len(items); i++ {', note: { tag: 'simplification · medium', msg: 'This loop duplicates the one below it — one pass is enough.' } },
+    { n: 26, code: '    fmt.Println(items[i])' },
+    { n: 27, code: '  }' },
+    { n: 28, code: '  for i := 0; i < len(items); i++ {' },
+    { n: 29, code: '    fmt.Println(items[i])' },
+    { n: 30, code: '  }' },
+    { n: 31, code: '}' }
+  ];
+
+  var grid = document.getElementById('codeGrid');
+  var frag = document.createDocumentFragment();
+  var noteDelay = 1.1;
+
+  lines.forEach(function (line) {
+    var row = document.createElement('div');
+    row.className = 'code-line' + (line.note ? ' has-note' : '');
+    var ln = document.createElement('span');
+    ln.className = 'ln';
+    ln.textContent = line.n;
+    var src = document.createElement('code');
+    src.className = 'src';
+    src.textContent = line.code;
+    row.appendChild(ln);
+    row.appendChild(src);
+    frag.appendChild(row);
+
+    if (line.note) {
+      var noteRow = document.createElement('div');
+      noteRow.className = 'note-row';
+      var note = document.createElement('div');
+      note.className = 'note';
+      if (!reduceMotion) { note.style.animationDelay = noteDelay + 's'; }
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = line.note.tag;
+      var msg = document.createElement('span');
+      msg.className = 'msg';
+      msg.textContent = line.note.msg;
+      note.appendChild(tag);
+      note.appendChild(msg);
+      noteRow.appendChild(note);
+      frag.appendChild(noteRow);
+      noteDelay += 0.35;
+    }
+  });
+
+  grid.appendChild(frag);
+  document.getElementById('demoSummary').style.animationDelay = (reduceMotion ? 0 : noteDelay + 0.2) + 's';
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+  }
+
+  /* ---------- PR mockup: review-event toggle ---------- */
+  var prToggle = document.querySelector('.pr-toggle');
+  var prPill = document.getElementById('prPill');
+  var prText = document.getElementById('prText');
+  var prMergeBtn = document.getElementById('prMergeBtn');
+  var prNote = document.getElementById('prNote');
+
+  var prStates = {
+    COMMENT: {
+      pillClass: '', pill: 'COMMENTED',
+      text: "Left 4 comments across 1 file. A COMMENT review never blocks or requires action before merging.",
+      btnClass: '', note: "No review requirement triggered — merge whenever you're ready."
+    },
+    APPROVE: {
+      pillClass: 'good', pill: 'APPROVED',
+      text: "Looks good — 4 comments left for consideration, none of them blocking.",
+      btnClass: '', note: "Approved. Ready to merge."
+    },
+    REQUEST_CHANGES: {
+      pillClass: 'bad', pill: 'CHANGES REQUESTED',
+      text: "4 issues found, 3 marked high severity. Changes are requested before this can be approved.",
+      btnClass: 'blocked', note: "Merging is blocked until changes are addressed — if your branch protection requires a review."
+    }
+  };
+
+  if (prToggle && prPill && prText && prMergeBtn && prNote) {
+    prToggle.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('button[data-mode]') : null;
+      if (!btn) { return; }
+      var state = prStates[btn.getAttribute('data-mode')];
+      if (!state) { return; }
+
+      var buttons = prToggle.querySelectorAll('button');
+      for (var i = 0; i < buttons.length; i++) { buttons[i].classList.remove('active'); }
+      btn.classList.add('active');
+
+      prPill.className = 'pr-status-pill' + (state.pillClass ? ' ' + state.pillClass : '');
+      prPill.textContent = state.pill;
+      prText.textContent = state.text;
+      prMergeBtn.className = 'pr-merge-btn' + (state.btnClass ? ' ' + state.btnClass : '');
+      prNote.textContent = state.note;
+    });
+  }
+
+  /* ---------- Emulation sandbox: interactive CRT terminal ---------- */
+  var crtEl = document.getElementById('crtText');
+  var crtScreen = document.getElementById('crtScreen');
+  var crtInput = document.getElementById('crtInput');
+  var crtBtn = document.getElementById('crtRerun');
+
+  if (crtEl && crtScreen && crtInput && crtBtn) {
+    var bootText = '**** AI CODE REVIEWER V1.0 ****\n 8K SYSTEM · OLLAMA LINK OK\n\nTYPE HELP FOR COMMANDS.\n\nREADY.\n\n';
+    var reviewLines = [
+      'LOADING PULL REQUEST #42...',
+      'READING SAMPLE.GO (31 LINES)...',
+      'ASKING QWEN2.5-CODER:7B...',
+      '',
+      '4 FINDINGS:',
+      '',
+      ' LN08  <span class="inv">SECURITY HIGH</span>  HARDCODED SECRET IN SOURCE',
+      ' LN11  <span class="inv">BUG      HIGH</span>  SQL INJECTION VIA CONCAT',
+      ' LN18  <span class="inv">BUG      HIGH</span>  OFF-BY-ONE, I &lt;= LEN(NUMS)',
+      ' LN25  SIMPLIFY  MED  DUPLICATE LOOP BODY',
+      '',
+      'POSTED 4 COMMENTS TO PR #42.'
+    ];
+    var helpText = 'AVAILABLE COMMANDS:\n  LIST              SHOW FILES IN THIS PR\n  REVIEW <FILE>     RUN A REVIEW\n  CLS               CLEAR SCREEN\n  HELP              SHOW THIS TEXT';
+
+    var crtHistory = bootText;
+    var crtBusy = false;
+    var crtTimers = [];
+
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function crtRender(showCursor) {
+      var cur = esc(crtInput.value.toUpperCase());
+      crtEl.innerHTML = crtHistory + '&gt;' + cur + (showCursor ? '<span class="crt-cursor"></span>' : '');
+      crtScreen.scrollTop = crtScreen.scrollHeight;
+    }
+
+    function crtReset() {
+      crtTimers.forEach(function (t) { clearTimeout(t); });
+      crtTimers = [];
+      crtBusy = false;
+      crtHistory = bootText;
+      crtInput.value = '';
+      crtRender(true);
+    }
+
+    function crtStreamReview() {
+      crtBusy = true;
+      crtRender(false);
+      var idx = 0;
+      var stepDelay = reduceMotion ? 0 : 150;
+      function step() {
+        crtHistory += (reviewLines[idx] || '') + '\n';
+        crtRender(false);
+        idx++;
+        if (idx < reviewLines.length) {
+          crtTimers.push(setTimeout(step, stepDelay));
+        } else {
+          crtHistory += '\nREADY.\n\n';
+          crtBusy = false;
+          crtRender(true);
+        }
+      }
+      crtTimers.push(setTimeout(step, reduceMotion ? 0 : 120));
+    }
+
+    function crtSubmit(raw) {
+      var upper = raw.trim().toUpperCase();
+      crtHistory += '&gt;' + esc(upper) + '\n';
+
+      if (upper === '') {
+        crtRender(true);
+        return;
+      }
+      if (upper === 'HELP') {
+        crtHistory += helpText + '\n\n';
+        crtRender(true);
+        return;
+      }
+      if (upper === 'LIST' || upper === 'DIR') {
+        crtHistory += 'SAMPLE.GO      31 LINES\n\n';
+        crtRender(true);
+        return;
+      }
+      if (upper === 'CLS' || upper === 'CLEAR') {
+        crtHistory = bootText;
+        crtRender(true);
+        return;
+      }
+      if (upper.indexOf('REVIEW') === 0) {
+        var target = upper.slice(6).trim();
+        if (target === '' || target === 'SAMPLE.GO' || target === 'SAMPLE') {
+          crtStreamReview();
+          return;
+        }
+        crtHistory += 'FILE NOT FOUND: ' + esc(target) + '\nTRY: LIST\n\n';
+        crtRender(true);
+        return;
+      }
+      crtHistory += '?SYNTAX ERROR\n\n';
+      crtRender(true);
+    }
+
+    crtInput.addEventListener('input', function () {
+      if (!crtBusy) { crtRender(true); }
+    });
+    crtInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !crtBusy) {
+        e.preventDefault();
+        var val = crtInput.value;
+        crtInput.value = '';
+        crtSubmit(val);
+      }
+    });
+    crtScreen.addEventListener('click', function () { crtInput.focus(); });
+    crtBtn.addEventListener('click', function () { crtReset(); crtInput.focus(); });
+
+    crtRender(true);
+  }
+})();
+</script>
