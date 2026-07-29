@@ -1,4 +1,9 @@
-<title>AI Code Reviewer — a senior review, without the cloud</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Code Reviewer: a senior review, without the cloud</title>
 <style>
   @font-face {
     font-family: 'JBMono';
@@ -27,66 +32,33 @@
   }
 
   :root {
-    --paper: #EEF1F3;
-    --panel: #E3E8EB;
-    --panel-2: #D9DFE3;
-    --ink: #151A1E;
-    --ink-dim: #545E64;
-    --ink-faint: #838F95;
-    --line: #C7CFD3;
-    --accent: #9C5B14;
-    --accent-strong: #7A4610;
-    --accent-bg: rgba(156, 91, 20, 0.10);
-    --add: #3D7A55;
-    --add-bg: rgba(61, 122, 85, 0.12);
-    --remove: #A24B4B;
-    --remove-bg: rgba(162, 75, 75, 0.12);
-    --shadow: rgba(21, 26, 30, 0.10);
-    --code-bg: #E7EBED;
+    /* Committed dark canvas, no light theme. Each accent hue means one thing:
+       amber = a GitHub review comment flag, green/rose = git add/remove,
+       violet = the model speaking. */
+    --paper: #0A0B0D;
+    --panel: #16181C;
+    --panel-2: #1E2227;
+    --ink: #ECEFF2;
+    --ink-dim: #9BA3AA;
+    --ink-faint: #666E75;
+    --line: #24282E;
+    --accent: #FFB020;
+    --accent-strong: #FFC85C;
+    --accent-bg: rgba(255, 176, 32, 0.14);
+    --add: #4FDE8C;
+    --add-bg: rgba(79, 222, 140, 0.14);
+    --remove: #FF5D73;
+    --remove-bg: rgba(255, 93, 115, 0.14);
+    --model: #A78BFA;
+    --model-bg: rgba(167, 139, 250, 0.30);
+    --shadow: rgba(0, 0, 0, 0.6);
+    --code-bg: #101215;
 
     --font-mono: 'JBMono', ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
     --font-serif: 'SourceSerif', Charter, Georgia, serif;
 
     --wrap: 1120px;
     --prose: 42rem;
-    --dur: 1;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #0D1013;
-      --panel: #15191D;
-      --panel-2: #1C2126;
-      --ink: #E7EAEC;
-      --ink-dim: #9BA5AA;
-      --ink-faint: #6B757A;
-      --line: #272E33;
-      --accent: #E9A23D;
-      --accent-strong: #F4BC6C;
-      --accent-bg: rgba(233, 162, 61, 0.12);
-      --add: #6FBE8E;
-      --add-bg: rgba(111, 190, 142, 0.13);
-      --remove: #E08787;
-      --remove-bg: rgba(224, 135, 135, 0.13);
-      --shadow: rgba(0, 0, 0, 0.5);
-      --code-bg: #12161A;
-    }
-  }
-  :root[data-theme="dark"] {
-    --paper: #0D1013; --panel: #15191D; --panel-2: #1C2126;
-    --ink: #E7EAEC; --ink-dim: #9BA5AA; --ink-faint: #6B757A; --line: #272E33;
-    --accent: #E9A23D; --accent-strong: #F4BC6C; --accent-bg: rgba(233, 162, 61, 0.12);
-    --add: #6FBE8E; --add-bg: rgba(111, 190, 142, 0.13);
-    --remove: #E08787; --remove-bg: rgba(224, 135, 135, 0.13);
-    --shadow: rgba(0, 0, 0, 0.5); --code-bg: #12161A;
-  }
-  :root[data-theme="light"] {
-    --paper: #EEF1F3; --panel: #E3E8EB; --panel-2: #D9DFE3;
-    --ink: #151A1E; --ink-dim: #545E64; --ink-faint: #838F95; --line: #C7CFD3;
-    --accent: #9C5B14; --accent-strong: #7A4610; --accent-bg: rgba(156, 91, 20, 0.10);
-    --add: #3D7A55; --add-bg: rgba(61, 122, 85, 0.12);
-    --remove: #A24B4B; --remove-bg: rgba(162, 75, 75, 0.12);
-    --shadow: rgba(21, 26, 30, 0.10); --code-bg: #E7EBED;
   }
 
   * { box-sizing: border-box; }
@@ -102,7 +74,7 @@
     overflow-x: hidden;
   }
   a { color: var(--accent); text-decoration: none; }
-  h1, h2, h3, h4 { font-family: var(--font-mono); color: var(--ink); margin: 0; text-wrap: balance; font-weight: 700; letter-spacing: -0.01em; }
+  h1, h2, h3, h4 { font-family: var(--font-mono); color: var(--ink); margin: 0; text-wrap: balance; font-weight: 700; letter-spacing: -0.02em; }
   p { margin: 0; }
   code, pre { font-family: var(--font-mono); }
   ::selection { background: var(--accent-bg); color: var(--ink); }
@@ -117,6 +89,11 @@
     background: color-mix(in srgb, var(--paper) 88%, transparent);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
+    transition: box-shadow 0.25s ease, background 0.25s ease;
+  }
+  .nav.scrolled {
+    box-shadow: 0 8px 30px -20px var(--shadow);
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
   }
   .nav-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -147,51 +124,154 @@
     margin: 0 0 0.9rem;
   }
   .eyebrow .glyph { color: var(--accent-strong); }
-  section.block { padding: 5.5rem 0; border-top: 1px solid var(--line); }
+  section.block { padding: 7.5rem 0; border-top: 1px solid var(--line); }
   section.block:first-of-type { border-top: none; }
   h2.title { font-size: clamp(1.5rem, 2.4vw, 1.9rem); margin-bottom: 0.85rem; }
   .lede { color: var(--ink-dim); font-size: 1.0625rem; max-width: var(--prose); }
 
   /* ---------- Hero ---------- */
-  .hero { padding: 4.5rem 0 4rem; }
-  .hero-head { max-width: 46rem; margin-bottom: 3rem; }
-  .hero-head .eyebrow { margin-bottom: 1.1rem; }
+  .hero {
+    min-height: 90vh; display: flex; flex-direction: column; justify-content: center;
+    padding: 7rem 0 4.5rem; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ""; position: absolute; top: 0%; left: 50%; width: 70rem; height: 46rem;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, var(--accent-bg), var(--model-bg) 45%, transparent 70%);
+    filter: blur(50px);
+    opacity: 0.7;
+    animation: heroGlow 12s ease-in-out infinite;
+    pointer-events: none; z-index: 0;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 60% 55% at 50% 30%, black 0%, transparent 75%);
+    opacity: 0.5;
+  }
+  .hero-head, .demo-frame, .demo-summary { position: relative; z-index: 1; }
+  @keyframes heroGlow {
+    0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(1); }
+    50% { opacity: 0.85; transform: translateX(-50%) scale(1.08); }
+  }
+  .hero-head { max-width: 52rem; margin-bottom: 2.75rem; }
+  .hero-head .eyebrow { margin-bottom: 1.35rem; }
   h1.headline {
-    font-size: clamp(2.1rem, 5vw, 3.4rem);
-    line-height: 1.08;
-    margin-bottom: 1.2rem;
+    font-size: clamp(2.75rem, 8.5vw, 6.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    margin-bottom: 1.5rem;
   }
-  h1.headline .hl { color: var(--accent); }
+  h1.headline .word { display: inline-block; opacity: 0; transform: translateY(0.5em); filter: blur(6px); animation: wordIn 0.7s cubic-bezier(.2,.7,.2,1) forwards; }
+  h1.headline .word.hl { color: var(--accent); }
+  @keyframes wordIn { to { opacity: 1; transform: translateY(0); filter: blur(0); } }
   .hero-sub {
-    font-family: var(--font-serif); font-size: 1.15rem; color: var(--ink-dim);
-    max-width: 38rem; line-height: 1.6;
+    font-family: var(--font-serif); font-size: 1.2rem; color: var(--ink-dim);
+    max-width: 34rem; line-height: 1.6;
+    opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 1.05s;
   }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .hero-sub strong { color: var(--ink); font-weight: 600; }
+  .hero-cta {
+    display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 2rem;
+    opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 1.3s;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700;
+    padding: 0.75rem 1.3rem; border-radius: 5px; border: 1px solid transparent;
+    transition: box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+    cursor: pointer;
+    will-change: transform;
+  }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover {
+    box-shadow: 0 10px 24px -10px var(--accent-bg), 0 14px 30px -16px var(--model-bg);
+  }
+  .btn-ghost { background: transparent; color: var(--ink-dim); border-color: var(--line); }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--accent); }
+  .btn-gh-icon { flex: none; }
+  @media (prefers-reduced-motion: reduce) {
+    h1.headline .word { animation: none; opacity: 1; transform: none; filter: none; }
+    .hero-sub, .hero-cta { animation: none; opacity: 1; }
+  }
+  @media (max-width: 720px) {
+    .hero { min-height: 0; padding: 3.5rem 0 3rem; }
+  }
 
-  /* ---------- Demo code panel ---------- */
+  /* ---------- Repo / install card ---------- */
+  .repo-card {
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--code-bg);
+    padding: 1.75rem 1.85rem;
+    box-shadow: 0 18px 50px -28px var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .repo-card::before {
+    content: ""; position: absolute; inset: -40% -20% auto auto; width: 60%; height: 140%;
+    background: radial-gradient(circle, var(--model-bg), transparent 70%);
+    filter: blur(30px);
+    pointer-events: none;
+  }
+  .repo-card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; position: relative; }
+  .repo-card-name { display: flex; align-items: center; gap: 0.5em; font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: 1rem; min-width: 0; overflow-wrap: anywhere; }
+  .repo-gh-icon { flex: none; color: var(--ink-dim); }
+  .repo-card-link { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-strong); position: relative; }
+  .repo-card-link:hover { color: var(--accent-strong); }
+  .repo-card-tagline { position: relative; color: var(--ink-dim); font-size: 0.97rem; max-width: 38rem; margin-top: 0.9rem; }
+  .repo-card-clone {
+    position: relative; margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 0.65rem 0.9rem;
+  }
+  .repo-card-clone code { font-family: var(--font-mono); font-size: 0.83rem; color: var(--ink); overflow-x: auto; white-space: nowrap; }
+  .repo-copy-btn {
+    flex: none; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; text-transform: uppercase;
+    padding: 0.35rem 0.7rem; border-radius: 4px; border: 1px solid var(--line); background: var(--paper); color: var(--ink-dim);
+    cursor: pointer; transition: border-color 0.18s ease, color 0.18s ease;
+    min-width: 5.5rem; text-align: center;
+  }
+  .repo-copy-btn:hover { border-color: var(--accent); color: var(--ink); }
+  .repo-copy-btn.copied { border-color: var(--add); color: var(--add); }
+
+  /* ---------- Demo code panel (hero centerpiece: live-typing diff review) ---------- */
   .demo-frame {
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--code-bg);
     overflow: hidden;
-    box-shadow: 0 18px 50px -20px var(--shadow);
+    box-shadow: 0 30px 70px -30px var(--shadow), 0 0 0 1px rgba(255,255,255,0.02);
+    min-height: 26rem;
   }
   .demo-tab {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0.6rem 1rem;
-    font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faint);
+    padding: 0.75rem 1.15rem;
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint);
     border-bottom: 1px solid var(--line);
     background: var(--panel);
   }
-  .demo-tab .status { color: var(--add); }
-  .code-grid { margin: 0; padding: 0.35rem 0; overflow-x: auto; }
+  .demo-tab .status { display: inline-flex; align-items: center; gap: 0.5em; color: var(--add); }
+  .status-dot {
+    width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--add);
+    box-shadow: 0 0 0 0 var(--add-bg);
+    animation: statusPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes statusPulse {
+    0% { box-shadow: 0 0 0 0 var(--add-bg); }
+    70% { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .code-grid { margin: 0; padding: 0.5rem 0; overflow-x: auto; min-height: 22rem; }
   .code-line {
     display: grid;
     grid-template-columns: 2.75rem 1fr;
     align-items: start;
     font-family: var(--font-mono);
-    font-size: 0.83rem;
-    line-height: 1.72;
+    font-size: 0.92rem;
+    line-height: 1.8;
     position: relative;
   }
   .code-line.has-note { background: var(--accent-bg); }
@@ -201,32 +281,51 @@
   }
   .src { white-space: pre; color: var(--ink-dim); padding-right: 1rem; }
   .code-line.has-note .src { color: var(--ink); }
+  .type-cursor { display: inline-block; width: 0.5em; height: 1em; background: var(--ink); vertical-align: -0.15em; animation: blink 0.9s steps(1) infinite; }
   .note-row { grid-column: 1 / -1; padding: 0 1rem 0.6rem 2.75rem; }
   .note {
-    display: inline-flex; flex-direction: column; gap: 0.15rem;
+    display: inline-block;
     border: 1px solid var(--accent); border-left: 3px solid var(--accent);
     background: var(--panel); border-radius: 3px;
     padding: 0.45rem 0.7rem; margin-top: 0.15rem;
-    max-width: 34rem;
-    opacity: 0; transform: translateY(-3px);
-    animation: noteIn 0.5s ease forwards;
+    max-width: 100%;
+    box-sizing: border-box;
+    transform-origin: 0 0;
   }
+  .note.sev-bug { border-color: var(--remove); }
+  .note.sev-bug .tag { color: var(--remove); }
+  .note.sev-security { border-color: var(--accent); }
+  .note.sev-security .tag { color: var(--accent-strong); }
+  .note.sev-simplification { border-color: var(--add); }
+  .note.sev-simplification .tag { color: var(--add); }
+  .note.sev-style { border-color: var(--model); }
+  .note.sev-style .tag { color: var(--model); }
   .note .tag {
+    display: block;
     font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--accent-strong);
   }
-  .note .msg { font-family: var(--font-serif); font-size: 0.86rem; color: var(--ink); line-height: 1.45; }
-  @keyframes noteIn { to { opacity: 1; transform: translateY(0); } }
+  .note .msg {
+    display: block; margin-top: 0.15rem; overflow-wrap: break-word; word-break: break-word;
+    font-family: var(--font-serif); font-size: 0.86rem; color: var(--ink); line-height: 1.45;
+  }
 
   .demo-summary {
     display: flex; gap: 1.5rem; align-items: baseline; flex-wrap: wrap;
-    margin-top: 1.1rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint);
-    opacity: 0; animation: noteIn 0.6s ease forwards;
+    margin-top: 1.25rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint);
+    opacity: 0; transform: translateY(6px); transition: opacity 0.5s ease, transform 0.5s ease;
   }
+  .demo-summary.show { opacity: 1; transform: translateY(0); }
   .demo-summary b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .demo-summary b.model-name { color: var(--model); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot { animation: none; }
+    .type-cursor { animation: none; }
+  }
 
   @media (max-width: 640px) {
-    .code-line { grid-template-columns: 2rem 1fr; font-size: 0.76rem; }
+    .code-line { grid-template-columns: 2rem 1fr; font-size: 0.8rem; }
     .note-row { padding-left: 2rem; }
   }
 
@@ -234,11 +333,31 @@
   .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.6s ease, transform 0.6s ease; }
   .reveal.in { opacity: 1; transform: translateY(0); }
 
+  #categories.reveal.in .cat { opacity: 0; transform: translateY(10px); animation: itemIn 0.55s ease forwards; }
+  #categories.reveal.in .cat:nth-child(1) { animation-delay: 0.05s; }
+  #categories.reveal.in .cat:nth-child(2) { animation-delay: 0.15s; }
+  #categories.reveal.in .cat:nth-child(3) { animation-delay: 0.25s; }
+  #categories.reveal.in .cat:nth-child(4) { animation-delay: 0.35s; }
+
+  #how.reveal.in .step { opacity: 0; transform: translateY(10px); animation: itemIn 0.5s ease forwards; }
+  #how.reveal.in .step:nth-child(1) { animation-delay: 0.03s; }
+  #how.reveal.in .step:nth-child(2) { animation-delay: 0.11s; }
+  #how.reveal.in .step:nth-child(3) { animation-delay: 0.19s; }
+  #how.reveal.in .step:nth-child(4) { animation-delay: 0.27s; }
+  #how.reveal.in .step:nth-child(5) { animation-delay: 0.35s; }
+  #how.reveal.in .step:nth-child(6) { animation-delay: 0.43s; }
+
+  @keyframes itemIn { to { opacity: 1; transform: translateY(0); } }
+
   /* ---------- Category grid ---------- */
   .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 2.5rem; }
-  .cat { background: var(--paper); padding: 1.5rem 1.4rem; transition: background 0.2s ease; }
-  .cat:hover { background: var(--panel); }
-  .cat .kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--accent); text-transform: uppercase; }
+  .cat { background: var(--paper); padding: 1.5rem 1.4rem; transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
+  .cat:hover { background: var(--panel); transform: translateY(-3px); box-shadow: 0 14px 30px -20px var(--shadow); }
+  .cat .kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .kicker-bug { color: var(--remove); }
+  .kicker-security { color: var(--accent); }
+  .kicker-simplification { color: var(--add); }
+  .kicker-style { color: var(--model); }
   .cat h3 { font-family: var(--font-mono); font-size: 1.05rem; margin: 0.5rem 0 0.6rem; }
   .cat p { color: var(--ink-dim); font-size: 0.92rem; line-height: 1.5; }
   @media (max-width: 880px) { .cats { grid-template-columns: repeat(2, 1fr); } }
@@ -247,17 +366,18 @@
   /* ---------- Pipeline (how it works) ---------- */
   .pipeline { margin-top: 2.75rem; border-top: 1px solid var(--line); }
   .step {
-    display: grid; grid-template-columns: 3.5rem 1fr;
-    padding: 1.6rem 0; border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: 5rem 1fr;
+    padding: 2rem 0; border-bottom: 1px solid var(--line);
     gap: 1.25rem;
   }
   .step .num {
-    font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-faint);
-    padding-top: 0.15rem; font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: var(--line);
+    line-height: 1; font-variant-numeric: tabular-nums;
+    -webkit-text-stroke: 1px var(--ink-faint);
   }
   .step h3 { font-size: 1.02rem; margin-bottom: 0.4rem; }
   .step p { color: var(--ink-dim); font-size: 0.98rem; max-width: 40rem; }
-  @media (max-width: 560px) { .step { grid-template-columns: 2.25rem 1fr; } }
+  @media (max-width: 560px) { .step { grid-template-columns: 3rem 1fr; } .step .num { font-size: 1.2rem; } }
 
   /* ---------- Code blocks (yaml / terminal) ---------- */
   .codeblock {
@@ -330,7 +450,7 @@
   }
   .pr-comment { display: flex; gap: 0.75rem; padding: 0.9rem 1.25rem 1.15rem 2.75rem; border-bottom: 1px solid var(--line); background: var(--paper); }
   .pr-avatar {
-    flex: none; width: 1.7rem; height: 1.7rem; border-radius: 3px; background: var(--accent);
+    flex: none; width: 1.7rem; height: 1.7rem; border-radius: 3px; background: var(--model);
     color: var(--paper); font-family: var(--font-mono); font-size: 0.64rem; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
   }
@@ -380,6 +500,16 @@
   }
   footer .brand { font-size: 0.85rem; }
   footer .tagline { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); }
+  .footer-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .footer-gh {
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-dim);
+    border: 1px solid var(--line); border-radius: 5px; padding: 0.4rem 0.8rem;
+    transition: border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  }
+  .footer-gh:hover { color: var(--ink); border-color: var(--accent); transform: translateY(-2px); }
+  @media (prefers-reduced-motion: reduce) {
+    .footer-gh:hover { transform: none; }
+  }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -455,13 +585,24 @@
 
   @media (prefers-reduced-motion: reduce) {
     .reveal { transition: none; opacity: 1; transform: none; }
-    .note, .demo-summary { animation: none; opacity: 1; transform: none; }
+    .demo-summary { animation: none; transition: none; opacity: 1; transform: none; }
     .cursor { animation: none; }
     .nav-links a::after { transition: none; }
     .crt-text { animation: none; }
     .crt-cursor { animation: none; }
+    #categories.reveal.in .cat, #how.reveal.in .step { animation: none; opacity: 1; transform: none; }
+    .cat:hover { transform: none; }
+    .hero::before { animation: none; }
+    .nav { transition: none; }
   }
 </style>
+</head>
+<body>
+<svg style="position:absolute; width:0; height:0; overflow:hidden;" aria-hidden="true" focusable="false">
+  <symbol id="gh-mark" viewBox="0 0 16 16">
+    <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+  </symbol>
+</svg>
 
 <div class="nav">
   <div class="wrap nav-row">
@@ -474,6 +615,7 @@
       <li><a href="#limits">Limits</a></li>
       <li><a href="#local">Run locally</a></li>
       <li><a href="#sandbox">Sandbox</a></li>
+      <li><a href="https://github.com/PotatoNoodIes/code_reviewer" target="_blank" rel="noopener">GitHub</a></li>
     </ul>
   </div>
 </div>
@@ -483,41 +625,66 @@
   <section class="hero">
     <div class="hero-head">
       <div class="eyebrow"><span class="glyph">›</span> go · github actions · ollama</div>
-      <h1 class="headline">Reads your diff like a senior engineer. <span class="hl">Never leaves your network.</span></h1>
-      <p class="hero-sub">AI Code Reviewer is a GitHub Action that reviews every pull request with a <strong>self-hosted Ollama model</strong> — full file context, inline comments on the exact line, and no cloud API bill.</p>
+      <h1 class="headline"><span class="word" style="animation-delay:0.10s">Reads</span> <span class="word" style="animation-delay:0.15s">your</span> <span class="word" style="animation-delay:0.20s">diff</span> <span class="word" style="animation-delay:0.25s">like</span> <span class="word" style="animation-delay:0.30s">a</span> <span class="word" style="animation-delay:0.35s">senior</span> <span class="word" style="animation-delay:0.40s">engineer.</span> <span class="word hl" style="animation-delay:0.48s">Never</span> <span class="word hl" style="animation-delay:0.53s">leaves</span> <span class="word hl" style="animation-delay:0.58s">your</span> <span class="word hl" style="animation-delay:0.63s">network.</span></h1>
+      <p class="hero-sub">AI Code Reviewer is a GitHub Action that reviews every pull request with a <strong>self-hosted Ollama model</strong>, with full file context, inline comments on the exact line, and no cloud API bill.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary magnetic" href="https://github.com/PotatoNoodIes/code_reviewer" target="_blank" rel="noopener">
+          <svg class="btn-gh-icon" width="16" height="16" aria-hidden="true"><use href="#gh-mark"></use></svg>
+          View on GitHub
+        </a>
+        <a class="btn btn-ghost magnetic" href="#setup">See setup &rarr;</a>
+      </div>
     </div>
 
-    <div class="demo-frame">
-      <div class="demo-tab"><span>sample.go — pull_request #42</span><span class="status">● review posted</span></div>
+    <div class="demo-frame" id="demoFrame">
+      <div class="demo-tab"><span>sample.go · pull_request #42</span><span class="status"><span class="status-dot"></span> reviewing live</span></div>
       <pre class="code-grid" id="codeGrid"><!-- rows injected below --></pre>
     </div>
-    <div class="demo-summary" id="demoSummary" style="animation-delay: 2.3s;">
-      <span><b>4</b> findings</span><span><b>1</b> file reviewed</span><span>model: <b>qwen2.5-coder:7b</b></span>
+    <div class="demo-summary" id="demoSummary">
+      <span><b>4</b> findings</span><span><b>1</b> file reviewed</span><span>model: <b class="model-name">qwen2.5-coder:7b</b></span>
+    </div>
+  </section>
+
+  <section class="block reveal" id="repo">
+    <div class="eyebrow"><span class="glyph">›</span> the repo</div>
+    <div class="repo-card">
+      <div class="repo-card-head">
+        <span class="repo-card-name">
+          <svg class="repo-gh-icon" width="15" height="15" aria-hidden="true"><use href="#gh-mark"></use></svg>
+          PotatoNoodIes/code_reviewer
+        </span>
+        <a class="repo-card-link" href="https://github.com/PotatoNoodIes/code_reviewer" target="_blank" rel="noopener">Open repo &rarr;</a>
+      </div>
+      <p class="repo-card-tagline">A GitHub Action that reviews pull requests like a senior engineer: bugs, security issues, simplification opportunities, and style, using a self-hosted Ollama model instead of a paid external API.</p>
+      <div class="repo-card-clone">
+        <code id="repoCloneCmd">git clone https://github.com/PotatoNoodIes/code_reviewer.git</code>
+        <button type="button" class="repo-copy-btn" id="repoCopyBtn" aria-live="polite">Copy</button>
+      </div>
     </div>
   </section>
 
   <section class="block reveal" id="categories">
     <div class="eyebrow"><span class="glyph">›</span> what it checks</div>
     <h2 class="title">Four categories, every file, every push.</h2>
-    <p class="lede">The same system prompt runs on every changed file: no generic linting rules, no invented nits — if a file is clean, it says so.</p>
+    <p class="lede">The same system prompt runs on every changed file: no generic linting rules, no invented nits. If a file is clean, it says so.</p>
     <div class="cats">
       <div class="cat">
-        <div class="kicker">bug</div>
+        <div class="kicker kicker-bug">bug</div>
         <h3>Logic &amp; correctness</h3>
-        <p>Off-by-ones, wrong conditionals, mishandled errors — things that will misbehave, crash, or return the wrong answer.</p>
+        <p>Off-by-ones, wrong conditionals, mishandled errors: things that will misbehave, crash, or return the wrong answer.</p>
       </div>
       <div class="cat">
-        <div class="kicker">security</div>
+        <div class="kicker kicker-security">security</div>
         <h3>Vulnerabilities</h3>
         <p>Injection, hardcoded secrets, unsafe deserialization, missing auth or validation.</p>
       </div>
       <div class="cat">
-        <div class="kicker">simplification</div>
+        <div class="kicker kicker-simplification">simplification</div>
         <h3>Reuse &amp; clarity</h3>
         <p>Code that works but could be clearer, shorter, or shouldn't be duplicated.</p>
       </div>
       <div class="cat">
-        <div class="kicker">style</div>
+        <div class="kicker kicker-style">style</div>
         <h3>Naming &amp; idiom</h3>
         <p>Formatting and naming issues a careful teammate would flag in passing.</p>
       </div>
@@ -527,7 +694,7 @@
   <section class="block reveal" id="how">
     <div class="eyebrow"><span class="glyph">›</span> how it works</div>
     <h2 class="title">One pull request, six steps.</h2>
-    <p class="lede">No polling, no local checkout — every step reads from the GitHub API directly, driven by the event that triggered the run.</p>
+    <p class="lede">No polling, no local checkout. Every step reads from the GitHub API directly, driven by the event that triggered the run.</p>
     <div class="pipeline">
       <div class="step">
         <div class="num">01</div>
@@ -535,7 +702,7 @@
       </div>
       <div class="step">
         <div class="num">02</div>
-        <div><h3>Select files</h3><p>Changed files are listed, filtered against <code>ignore-patterns</code>, and capped at <code>max-files</code> — largest diffs reviewed first, the rest reported as skipped.</p></div>
+        <div><h3>Select files</h3><p>Changed files are listed, filtered against <code>ignore-patterns</code>, and capped at <code>max-files</code>, largest diffs reviewed first and the rest reported as skipped.</p></div>
       </div>
       <div class="step">
         <div class="num">03</div>
@@ -543,11 +710,11 @@
       </div>
       <div class="step">
         <div class="num">04</div>
-        <div><h3>Fetch full context</h3><p>The complete file comes from the Git Blob API at the head commit, so the model reads whole functions — not fragments.</p></div>
+        <div><h3>Fetch full context</h3><p>The complete file comes from the Git Blob API at the head commit, so the model reads whole functions, not fragments.</p></div>
       </div>
       <div class="step">
         <div class="num">05</div>
-        <div><h3>Ask the model</h3><p>File, diff, and a fixed senior-review system prompt go to Ollama, constrained to a JSON schema. Malformed output is retried, then skipped — never allowed to break the run.</p></div>
+        <div><h3>Ask the model</h3><p>File, diff, and a fixed senior-review system prompt go to Ollama, constrained to a JSON schema. Malformed output is retried, then skipped, never allowed to break the run.</p></div>
       </div>
       <div class="step">
         <div class="num">06</div>
@@ -559,7 +726,7 @@
   <section class="block reveal" id="setup">
     <div class="eyebrow"><span class="glyph">›</span> setup</div>
     <h2 class="title">Point it at a self-hosted runner.</h2>
-    <p class="lede">Ollama needs to be reachable from the machine running the job — realistic for a self-hosted runner, not for GitHub-hosted ones.</p>
+    <p class="lede">Ollama needs to be reachable from the machine running the job, realistic for a self-hosted runner, not for GitHub-hosted ones.</p>
 
     <div class="codeblock">
       <div class="bar">.github/workflows/ai-review.yml</div>
@@ -568,13 +735,13 @@
     <span class="y-key">types</span>: [<span class="y-val">opened</span>, <span class="y-val">synchronize</span>]
 
 <span class="y-key">permissions</span>:
-  <span class="y-key">pull-requests</span>: <span class="y-val">write</span>  <span class="y-com"># required — default GITHUB_TOKEN is read-only</span>
+  <span class="y-key">pull-requests</span>: <span class="y-val">write</span>  <span class="y-com"># required, default GITHUB_TOKEN is read-only</span>
 
 <span class="y-key">jobs</span>:
   <span class="y-key">review</span>:
     <span class="y-key">runs-on</span>: <span class="y-val">self-hosted</span>
     <span class="y-key">steps</span>:
-      - <span class="y-key">uses</span>: <span class="y-val">&lt;owner&gt;/ai-code-reviewer@v1</span>
+      - <span class="y-key">uses</span>: <span class="y-val">PotatoNoodIes/code_reviewer@v1</span>
         <span class="y-key">with</span>:
           <span class="y-key">github-token</span>: <span class="y-val">${{ secrets.GITHUB_TOKEN }}</span>
           <span class="y-key">ollama-url</span>: <span class="y-val">http://localhost:11434</span>
@@ -586,10 +753,10 @@
         <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td>github-token</td><td>required</td><td>Reads PR data and posts comments.</td></tr>
-          <tr><td>ollama-url</td><td>localhost:11434</td><td>Base URL of the Ollama server — see note below.</td></tr>
+          <tr><td>ollama-url</td><td>localhost:11434</td><td>Base URL of the Ollama server, see note below.</td></tr>
           <tr><td>ollama-model</td><td>qwen2.5-coder:7b</td><td>A code-focused model reviews far better than a general chat model.</td></tr>
           <tr><td>ollama-format-mode</td><td>schema</td><td>JSON-schema-constrained decoding; falls back to plain <code>json</code> on older Ollama.</td></tr>
-          <tr><td>max-files</td><td>15</td><td>Cap per PR — largest diffs reviewed first.</td></tr>
+          <tr><td>max-files</td><td>15</td><td>Cap per PR, largest diffs reviewed first.</td></tr>
           <tr><td>ignore-patterns</td><td>vendor, lockfiles…</td><td>Comma-separated globs of paths to skip.</td></tr>
           <tr><td>review-event</td><td>COMMENT</td><td>COMMENT, APPROVE, or REQUEST_CHANGES.</td></tr>
           <tr><td>dry-run</td><td>false</td><td>Print findings to the log instead of posting.</td></tr>
@@ -599,7 +766,7 @@
 
     <div class="callout">
       <span class="tag">reviewing the reviewer</span>
-      <p>This ships as a <strong>Docker container action</strong>, which runs in its own network namespace — <code>localhost</code> inside the container is not the runner host, even on self-hosted infrastructure.</p>
+      <p>This ships as a <strong>Docker container action</strong>, which runs in its own network namespace: <code>localhost</code> inside the container is not the runner host, even on self-hosted infrastructure.</p>
       <ul>
         <li>Bind Ollama to all interfaces (<code>OLLAMA_HOST=0.0.0.0</code>) and point <code>ollama-url</code> at the runner's real LAN IP or Docker bridge gateway.</li>
         <li>Or run the self-hosted runner itself with <code>--network host</code>, so job containers inherit host networking and <code>localhost</code> resolves as expected.</li>
@@ -610,7 +777,7 @@
   <section class="block reveal" id="pr">
     <div class="eyebrow"><span class="glyph">›</span> on the pull request</div>
     <h2 class="title">What actually shows up in the PR.</h2>
-    <p class="lede">The same sample.go, the same four findings — rendered as the review GitHub would show. Flip <code>review-event</code> below to see how each mode behaves.</p>
+    <p class="lede">The same sample.go, the same four findings, rendered as the review GitHub would show. Flip <code>review-event</code> below to see how each mode behaves.</p>
 
     <div class="pr-mock">
       <div class="pr-head">
@@ -628,7 +795,7 @@
           <div class="pr-avatar">AI</div>
           <div class="pr-comment-body">
             <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">security &middot; high</span></div>
-            <p class="pr-msg">Hardcoded secret in source code — move to environment variables or a secrets manager.</p>
+            <p class="pr-msg">Hardcoded secret in source code. Move to environment variables or a secrets manager.</p>
           </div>
         </div>
 
@@ -642,7 +809,7 @@
           <div class="pr-avatar">AI</div>
           <div class="pr-comment-body">
             <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">bug &middot; high</span></div>
-            <p class="pr-msg">SQL injection via string concatenation — use a parameterized query.</p>
+            <p class="pr-msg">SQL injection via string concatenation. Use a parameterized query.</p>
           </div>
         </div>
 
@@ -656,7 +823,7 @@
           <div class="pr-avatar">AI</div>
           <div class="pr-comment-body">
             <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev high">bug &middot; high</span></div>
-            <p class="pr-msg">Off-by-one — i &lt;= len(nums) reads one index past the end of the slice.</p>
+            <p class="pr-msg">Off-by-one: i &lt;= len(nums) reads one index past the end of the slice.</p>
           </div>
         </div>
 
@@ -670,7 +837,7 @@
           <div class="pr-avatar">AI</div>
           <div class="pr-comment-body">
             <div class="pr-comment-head"><span class="pr-author">ai-code-reviewer</span><span class="pr-when">commented</span><span class="pr-sev med">simplification &middot; medium</span></div>
-            <p class="pr-msg">This loop duplicates the one below it — one pass is enough.</p>
+            <p class="pr-msg">This loop duplicates the one below it; one pass is enough.</p>
           </div>
         </div>
       </div>
@@ -684,7 +851,7 @@
         <p class="pr-summary-text" id="prText">Left 4 comments across 1 file. A COMMENT review never blocks or requires action before merging.</p>
         <div class="pr-merge">
           <button class="pr-merge-btn" id="prMergeBtn" disabled>Merge pull request</button>
-          <span class="pr-merge-note" id="prNote">No review requirement triggered — merge whenever you're ready.</span>
+          <span class="pr-merge-note" id="prNote">No review requirement triggered, merge whenever you're ready.</span>
         </div>
         <div class="pr-toggle" role="group" aria-label="review-event value">
           <button type="button" data-mode="COMMENT" class="active">review-event: COMMENT</button>
@@ -699,9 +866,9 @@
     <div class="eyebrow"><span class="glyph">›</span> known limits</div>
     <h2 class="title">What v1 doesn't do yet.</h2>
     <ul class="limits">
-      <li>No stale-comment resolution — the REST API has no thread-resolve endpoint (needs GraphQL's <code>resolveReviewThread</code>), so comments for since-fixed issues stay open.</li>
-      <li><code>max-file-lines</code> and <code>ollama-concurrency</code> are accepted but not yet enforced — files review sequentially, uncapped by line count.</li>
-      <li>Renames with no content change, and diffs GitHub declines to compute, are skipped — there's no diff to validate a finding against.</li>
+      <li>No stale-comment resolution: the REST API has no thread-resolve endpoint (needs GraphQL's <code>resolveReviewThread</code>), so comments for since-fixed issues stay open.</li>
+      <li><code>max-file-lines</code> and <code>ollama-concurrency</code> are accepted but not yet enforced; files review sequentially, uncapped by line count.</li>
+      <li>Renames with no content change, and diffs GitHub declines to compute, are skipped; there's no diff to validate a finding against.</li>
       <li>Schema-constrained decoding needs a reasonably recent Ollama; older servers should use <code>ollama-format-mode: json</code>.</li>
     </ul>
   </section>
@@ -747,86 +914,237 @@ ok   internal/review       0.006s</span>
 
 <footer class="wrap">
   <div class="brand"><span class="dot">›</span>ai-code-reviewer</div>
-  <div class="tagline">Go · GitHub Actions · Ollama — self-hosted, private, no per-token bill.</div>
+  <div class="footer-right">
+    <span class="tagline">Go · GitHub Actions · Ollama: self-hosted, private, no per-token bill.</span>
+    <a class="footer-gh" href="https://github.com/PotatoNoodIes/code_reviewer" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+  </div>
 </footer>
 
 <script>
 (function () {
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- Nav: elevation on scroll ---------- */
+  var navEl = document.querySelector('.nav');
+  if (navEl) {
+    var updateNavScrolled = function () {
+      if (window.scrollY > 8) { navEl.classList.add('scrolled'); }
+      else { navEl.classList.remove('scrolled'); }
+    };
+    window.addEventListener('scroll', updateNavScrolled, { passive: true });
+    updateNavScrolled();
+  }
+
+  /* ---------- Spring physics (damped harmonic oscillator, no library) ---------- */
+  function createSpring(opts) {
+    var stiffness = opts.stiffness || 220;
+    var damping = opts.damping || 20;
+    var mass = opts.mass || 1;
+    var precision = opts.precision || 0.01;
+    var pos = opts.from || 0;
+    var vel = 0;
+    var target = pos;
+    var onUpdate = opts.onUpdate || function () {};
+    var rafId = null;
+    var lastTime = null;
+
+    function step(now) {
+      if (lastTime === null) { lastTime = now; }
+      var dt = Math.min((now - lastTime) / 1000, 0.032);
+      lastTime = now;
+      var acc = (-stiffness * (pos - target) - damping * vel) / mass;
+      vel += acc * dt;
+      pos += vel * dt;
+      if (Math.abs(vel) > precision || Math.abs(target - pos) > precision) {
+        onUpdate(pos);
+        rafId = requestAnimationFrame(step);
+      } else {
+        pos = target;
+        onUpdate(pos);
+        rafId = null;
+        lastTime = null;
+      }
+    }
+
+    return {
+      set: function (value) {
+        target = value;
+        lastTime = null;
+        if (!rafId) { rafId = requestAnimationFrame(step); }
+      },
+      jump: function (value) {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        pos = value; target = value; vel = 0; lastTime = null;
+        onUpdate(pos);
+      }
+    };
+  }
+
+  /* ---------- Magnetic CTA buttons (spring-driven follow + settle) ---------- */
+  if (!reduceMotion) {
+    document.querySelectorAll('.magnetic').forEach(function (el) {
+      var sx = 0, sy = 0;
+      function render() { el.style.transform = 'translate(' + sx.toFixed(1) + 'px, ' + sy.toFixed(1) + 'px)'; }
+      var springX = createSpring({ stiffness: 240, damping: 16, onUpdate: function (v) { sx = v; render(); } });
+      var springY = createSpring({ stiffness: 240, damping: 16, onUpdate: function (v) { sy = v; render(); } });
+      el.addEventListener('mousemove', function (e) {
+        var r = el.getBoundingClientRect();
+        var x = e.clientX - r.left - r.width / 2;
+        var y = e.clientY - r.top - r.height / 2;
+        springX.set(x * 0.35);
+        springY.set(y * 0.45);
+      });
+      el.addEventListener('mouseleave', function () {
+        springX.set(0);
+        springY.set(0);
+      });
+    });
+  }
+
+  /* ---------- Hero demo: live-typing diff review (loops) ---------- */
   var lines = [
     { n: 1, code: 'package main' },
     { n: 2, code: '' },
     { n: 3, code: 'import (' },
-    { n: 4, code: '  "database/sql"' },
-    { n: 5, code: '  "fmt"' },
+    { n: 4, code: '  "database/sql"' },
+    { n: 5, code: '  "fmt"' },
     { n: 6, code: ')' },
     { n: 7, code: '' },
-    { n: 8, code: 'const apiKey = "sk-live-abc123secretkey"', note: { tag: 'security · high', msg: 'Hardcoded secret in source code — move to environment variables or a secrets manager.' } },
+    { n: 8, code: 'const apiKey = "sk-live-abc123secretkey"', note: { sev: 'security', tag: 'security · high', msg: 'Hardcoded secret in source code. Move to environment variables or a secrets manager.' } },
     { n: 9, code: '' },
     { n: 10, code: 'func getUser(db *sql.DB, name string) {' },
-    { n: 11, code: '  query := "SELECT * FROM users WHERE name = \'" + name + "\'"', note: { tag: 'bug · high', msg: 'SQL injection via string concatenation — use a parameterized query.' } },
-    { n: 12, code: '  rows, _ := db.Query(query)' },
-    { n: 13, code: '  defer rows.Close()' },
+    { n: 11, code: '  query := "SELECT * FROM users WHERE name = \'" + name + "\'"', note: { sev: 'bug', tag: 'bug · high', msg: 'SQL injection via string concatenation. Use a parameterized query.' } },
+    { n: 12, code: '  rows, _ := db.Query(query)' },
+    { n: 13, code: '  defer rows.Close()' },
     { n: 14, code: '}' },
     { n: 15, code: '' },
     { n: 16, code: 'func sum(nums []int) int {' },
-    { n: 17, code: '  total := 0' },
-    { n: 18, code: '  for i := 0; i <= len(nums); i++ {', note: { tag: 'bug · high', msg: 'Off-by-one — i <= len(nums) reads one index past the end of the slice.' } },
-    { n: 19, code: '    total += nums[i]' },
-    { n: 20, code: '  }' },
-    { n: 21, code: '  return total' },
+    { n: 17, code: '  total := 0' },
+    { n: 18, code: '  for i := 0; i <= len(nums); i++ {', note: { sev: 'bug', tag: 'bug · high', msg: 'Off-by-one: i <= len(nums) reads one index past the end of the slice.' } },
+    { n: 19, code: '    total += nums[i]' },
+    { n: 20, code: '  }' },
+    { n: 21, code: '  return total' },
     { n: 22, code: '}' },
     { n: 23, code: '' },
     { n: 24, code: 'func printAll(items []string) {' },
-    { n: 25, code: '  for i := 0; i < len(items); i++ {', note: { tag: 'simplification · medium', msg: 'This loop duplicates the one below it — one pass is enough.' } },
-    { n: 26, code: '    fmt.Println(items[i])' },
-    { n: 27, code: '  }' },
-    { n: 28, code: '  for i := 0; i < len(items); i++ {' },
-    { n: 29, code: '    fmt.Println(items[i])' },
-    { n: 30, code: '  }' },
+    { n: 25, code: '  for i := 0; i < len(items); i++ {', note: { sev: 'simplification', tag: 'simplification · medium', msg: 'This loop duplicates the one below it; one pass is enough.' } },
+    { n: 26, code: '    fmt.Println(items[i])' },
+    { n: 27, code: '  }' },
+    { n: 28, code: '  for i := 0; i < len(items); i++ {' },
+    { n: 29, code: '    fmt.Println(items[i])' },
+    { n: 30, code: '  }' },
     { n: 31, code: '}' }
   ];
 
   var grid = document.getElementById('codeGrid');
-  var frag = document.createDocumentFragment();
-  var noteDelay = 1.1;
+  var demoSummary = document.getElementById('demoSummary');
 
-  lines.forEach(function (line) {
-    var row = document.createElement('div');
-    row.className = 'code-line' + (line.note ? ' has-note' : '');
-    var ln = document.createElement('span');
-    ln.className = 'ln';
-    ln.textContent = line.n;
-    var src = document.createElement('code');
-    src.className = 'src';
-    src.textContent = line.code;
-    row.appendChild(ln);
-    row.appendChild(src);
-    frag.appendChild(row);
-
-    if (line.note) {
-      var noteRow = document.createElement('div');
-      noteRow.className = 'note-row';
-      var note = document.createElement('div');
-      note.className = 'note';
-      if (!reduceMotion) { note.style.animationDelay = noteDelay + 's'; }
-      var tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = line.note.tag;
-      var msg = document.createElement('span');
-      msg.className = 'msg';
-      msg.textContent = line.note.msg;
-      note.appendChild(tag);
-      note.appendChild(msg);
-      noteRow.appendChild(note);
-      frag.appendChild(noteRow);
-      noteDelay += 0.35;
+  function buildNoteRow(note, animate) {
+    var noteRow = document.createElement('div');
+    noteRow.className = 'note-row';
+    var noteEl = document.createElement('div');
+    noteEl.className = 'note sev-' + note.sev;
+    var tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = note.tag;
+    var msg = document.createElement('span');
+    msg.className = 'msg';
+    msg.textContent = note.msg;
+    noteEl.appendChild(tag);
+    noteEl.appendChild(msg);
+    noteRow.appendChild(noteEl);
+    if (animate) {
+      noteEl.style.opacity = '0';
+      noteEl.style.transform = 'translateY(-4px) scale(0.97)';
+      createSpring({
+        stiffness: 260, damping: 20,
+        onUpdate: function (p) {
+          noteEl.style.opacity = Math.min(1, Math.max(0, p)).toFixed(3);
+          noteEl.style.transform = 'translateY(' + (-4 * (1 - p)).toFixed(2) + 'px) scale(' + (0.97 + 0.03 * p).toFixed(3) + ')';
+        }
+      }).set(1);
     }
-  });
+    return noteRow;
+  }
 
-  grid.appendChild(frag);
-  document.getElementById('demoSummary').style.animationDelay = (reduceMotion ? 0 : noteDelay + 0.2) + 's';
+  function renderStatic() {
+    if (!grid) { return; }
+    var frag = document.createDocumentFragment();
+    lines.forEach(function (line) {
+      var row = document.createElement('div');
+      row.className = 'code-line' + (line.note ? ' has-note' : '');
+      var ln = document.createElement('span');
+      ln.className = 'ln';
+      ln.textContent = line.n;
+      var src = document.createElement('code');
+      src.className = 'src';
+      src.textContent = line.code;
+      row.appendChild(ln);
+      row.appendChild(src);
+      frag.appendChild(row);
+      if (line.note) { frag.appendChild(buildNoteRow(line.note)); }
+    });
+    grid.appendChild(frag);
+    if (demoSummary) { demoSummary.classList.add('show'); }
+  }
+
+  var demoTimers = [];
+  function playTypewriter() {
+    demoTimers.forEach(function (t) { clearTimeout(t); });
+    demoTimers = [];
+    grid.innerHTML = '';
+    if (demoSummary) { demoSummary.classList.remove('show'); }
+
+    var idx = 0;
+    function nextLine() {
+      if (idx >= lines.length) {
+        if (demoSummary) { demoSummary.classList.add('show'); }
+        demoTimers.push(setTimeout(playTypewriter, 4200));
+        return;
+      }
+      var line = lines[idx];
+      var row = document.createElement('div');
+      row.className = 'code-line' + (line.note ? ' has-note' : '');
+      var ln = document.createElement('span');
+      ln.className = 'ln';
+      ln.textContent = line.n;
+      var src = document.createElement('code');
+      src.className = 'src';
+      var cursor = document.createElement('span');
+      cursor.className = 'type-cursor';
+      row.appendChild(ln);
+      row.appendChild(src);
+      row.appendChild(cursor);
+      grid.appendChild(row);
+      grid.scrollTop = grid.scrollHeight;
+
+      var chars = line.code.split('');
+      var ci = 0;
+      function typeChar() {
+        if (ci < chars.length) {
+          src.textContent += chars[ci];
+          ci++;
+          demoTimers.push(setTimeout(typeChar, 9));
+          return;
+        }
+        cursor.remove();
+        idx++;
+        if (line.note) {
+          grid.appendChild(buildNoteRow(line.note, true));
+          grid.scrollTop = grid.scrollHeight;
+          demoTimers.push(setTimeout(nextLine, 850));
+        } else {
+          demoTimers.push(setTimeout(nextLine, line.code === '' ? 40 : 55));
+        }
+      }
+      typeChar();
+    }
+    nextLine();
+  }
+
+  if (grid) {
+    if (reduceMotion) { renderStatic(); } else { playTypewriter(); }
+  }
 
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
@@ -850,17 +1168,17 @@ ok   internal/review       0.006s</span>
     COMMENT: {
       pillClass: '', pill: 'COMMENTED',
       text: "Left 4 comments across 1 file. A COMMENT review never blocks or requires action before merging.",
-      btnClass: '', note: "No review requirement triggered — merge whenever you're ready."
+      btnClass: '', note: "No review requirement triggered, merge whenever you're ready."
     },
     APPROVE: {
       pillClass: 'good', pill: 'APPROVED',
-      text: "Looks good — 4 comments left for consideration, none of them blocking.",
+      text: "Looks good, 4 comments left for consideration, none of them blocking.",
       btnClass: '', note: "Approved. Ready to merge."
     },
     REQUEST_CHANGES: {
       pillClass: 'bad', pill: 'CHANGES REQUESTED',
       text: "4 issues found, 3 marked high severity. Changes are requested before this can be approved.",
-      btnClass: 'blocked', note: "Merging is blocked until changes are addressed — if your branch protection requires a review."
+      btnClass: 'blocked', note: "Merging is blocked until changes are addressed (if your branch protection requires a review)."
     }
   };
 
@@ -880,6 +1198,35 @@ ok   internal/review       0.006s</span>
       prText.textContent = state.text;
       prMergeBtn.className = 'pr-merge-btn' + (state.btnClass ? ' ' + state.btnClass : '');
       prNote.textContent = state.note;
+    });
+  }
+
+  /* ---------- Repo card: copy clone command ---------- */
+  var repoCopyBtn = document.getElementById('repoCopyBtn');
+  var repoCloneCmd = document.getElementById('repoCloneCmd');
+
+  if (repoCopyBtn && repoCloneCmd) {
+    repoCopyBtn.addEventListener('click', function () {
+      var text = repoCloneCmd.textContent;
+      var done = function () {
+        repoCopyBtn.textContent = 'Copied ✓';
+        repoCopyBtn.classList.add('copied');
+        setTimeout(function () {
+          repoCopyBtn.textContent = 'Copy';
+          repoCopyBtn.classList.remove('copied');
+        }, 1500);
+      };
+      var fail = function () {
+        repoCopyBtn.textContent = 'Copy failed';
+        setTimeout(function () {
+          repoCopyBtn.textContent = 'Copy';
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fail);
+      } else {
+        fail();
+      }
     });
   }
 
@@ -1005,3 +1352,5 @@ ok   internal/review       0.006s</span>
   }
 })();
 </script>
+</body>
+</html>
