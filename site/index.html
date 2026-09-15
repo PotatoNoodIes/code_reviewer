@@ -244,7 +244,11 @@
     background: var(--code-bg);
     overflow: hidden;
     box-shadow: 0 30px 70px -30px var(--shadow), 0 0 0 1px rgba(255,255,255,0.02);
-    min-height: 26rem;
+    /* Fixed, not min-: the typing animation appends ~35 rows, and a frame that
+       grows to fit them shoves the rest of the page down on every line. */
+    height: 26rem;
+    display: flex;
+    flex-direction: column;
   }
   .demo-tab {
     display: flex; align-items: center; justify-content: space-between;
@@ -264,7 +268,14 @@
     70% { box-shadow: 0 0 0 6px transparent; }
     100% { box-shadow: 0 0 0 0 transparent; }
   }
-  .code-grid { margin: 0; padding: 0.5rem 0; overflow-x: auto; min-height: 22rem; }
+  .code-grid {
+    margin: 0; padding: 0.5rem 0;
+    flex: 1; min-height: 0;          /* fill the frame, allow shrink below content size */
+    overflow: auto;                  /* both axes: a horizontal scrollbar appearing
+                                        must not change the element's height */
+    overscroll-behavior: contain;    /* reaching the bottom doesn't scroll the page */
+    scroll-behavior: smooth;
+  }
   .code-line {
     display: grid;
     grid-template-columns: 2.75rem 1fr;
@@ -322,6 +333,7 @@
   @media (prefers-reduced-motion: reduce) {
     .status-dot { animation: none; }
     .type-cursor { animation: none; }
+    .code-grid { scroll-behavior: auto; }
   }
 
   @media (max-width: 640px) {
